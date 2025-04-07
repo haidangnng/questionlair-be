@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using QuestionLairBE.Infrastructure.Data;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using QuestionLairBE.Services.CourseService;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -51,6 +52,10 @@ builder.Services.AddCors(options =>
                 .AllowCredentials();
         });
 });
+
+// Register Service
+builder.Services.AddScoped<ICourseService, CourseService>();
+
 
 var app = builder.Build();
 

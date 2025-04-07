@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using QuestionLairBE.Application.DTOs.Course;
 using QuestionLairBE.Services.CourseService;
 using System.Security.Claims;
+using QuestionLairBE.Infrastructure.Data;
 
 namespace QuestionLairBE.Controllers;
 
@@ -11,10 +12,12 @@ namespace QuestionLairBE.Controllers;
 [Route("api/[controller]")]
 public class CoursesController : ControllerBase
 {
+    private readonly AppDbContext _context;
     private readonly ICourseService _courseService;
 
-    public CoursesController(ICourseService courseService)
+    public CoursesController(AppDbContext context, ICourseService courseService)
     {
+        _context = context;
         _courseService = courseService;
     }
 
@@ -28,8 +31,27 @@ public class CoursesController : ControllerBase
     [Authorize(Roles = "Teacher")]
     public async Task<IActionResult> CreateCourse([FromBody] CourseCreateDto dto)
     {
+      using var transaction = await _context.Database.BeginTransactionAsync();
+
+      try
+      {
         var course = await _courseService.CreateCourseAsync(dto, GetUserId());
-        return Ok(course);
+        var courseDto = new TeacherCourseDto
+        {
+          Id = course.Id,
+          Title = course.Title,
+          Description = course.Description,
+        };
+        await transaction.CommitAsync();
+
+        return Ok(courseDto);
+      }
+      catch (Exception e)
+      {
+        await transaction.RollbackAsync();
+        
+        return BadRequest(e.Message);
+      }
     }
 
     // ========================

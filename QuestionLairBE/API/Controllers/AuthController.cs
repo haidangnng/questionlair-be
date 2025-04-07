@@ -30,24 +30,54 @@ public class AuthController : ControllerBase
     [HttpPost("register")]
     public async Task<IActionResult> Register(RegisterDto dto)
     {
-        if (await _context.Users.AnyAsync(u => u.Email == dto.Email))
-            return BadRequest("Email already exists");
-
-        var user = new User
+        using var transaction = await _context.Database.BeginTransactionAsync();
+        try
         {
-            Username = dto.Username,
-            Email = dto.Email,
-            UserRole = Enum.Parse<UserRole>(dto.UserRole, true),
-            PasswordHash = HashPassword(dto.Password),
-            RefreshToken = GenerateRefreshToken(),
-            RefreshTokenExpiresAtUtc = DateTime.UtcNow.AddDays(7)
-        };
-
-        _context.Users.Add(user);
-        await _context.SaveChangesAsync();
-
-        var token = GenerateJwtToken(user);
-        return Ok(new { token, refreshToken = user.RefreshToken });
+            if (await _context.Users.AnyAsync(u => u.Email == dto.Email))
+                return BadRequest("Email already exists");
+        
+            var user = new User
+            {
+                Username = dto.Username,
+                Email = dto.Email,
+                UserRole = Enum.Parse<UserRole>(dto.UserRole, true),
+                PasswordHash = HashPassword(dto.Password),
+                RefreshToken = GenerateRefreshToken(),
+                RefreshTokenExpiresAtUtc = DateTime.UtcNow.AddDays(7)
+            };
+            
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync(); // Save to generate user.Id
+            
+            if (user.UserRole == UserRole.Student)
+            {
+                StudentProfile studentProfile = new StudentProfile
+                {
+                    StudentId = user.Id.ToString(),
+                    User = user
+                };
+                _context.StudentProfiles.Add(studentProfile);
+            }
+            else if (user.UserRole == UserRole.Teacher)
+            {
+                TeacherProfile teacherProfile = new TeacherProfile
+                {
+                    User = user
+                };
+                _context.TeacherProfiles.Add(teacherProfile);
+            }
+            
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+        
+            var token = GenerateJwtToken(user);
+            return Ok(new { token, refreshToken = user.RefreshToken });
+        }
+        catch (Exception e)
+        {
+            await transaction.RollbackAsync();
+            return BadRequest(e.Message);
+        }
     }
 
     [HttpPost("login")]
