@@ -43,20 +43,23 @@ public class CourseService : ICourseService
             .FirstOrDefaultAsync(p => p.Id == studentUserId);
 
         if (studentProfile == null) throw new Exception("Student profile not found");
+        
+        var course = await _context.Courses.FindAsync(courseId);
+        
+        if (course == null) throw new Exception("Course not found");
 
         var exists = await _context.StudentCourses
             .AnyAsync(sc => sc.CourseId == courseId && sc.StudentProfileId == studentProfile.Id);
 
-        if (!exists)
+        if (exists) throw new Exception("Student profile already enrolled");
+        
+        _context.StudentCourses.Add(new StudentCourse
         {
-            _context.StudentCourses.Add(new StudentCourse
-            {
-                CourseId = courseId,
-                StudentProfileId = studentProfile.Id
-            });
+          CourseId = courseId,
+          StudentProfileId = studentProfile.Id
+        });
 
-            await _context.SaveChangesAsync();
-        }
+        await _context.SaveChangesAsync();
     }
 
     public async Task<List<Course>> GetCoursesForStudent(int studentUserId)
