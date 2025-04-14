@@ -3,7 +3,9 @@ using Microsoft.EntityFrameworkCore;
 using QuestionLairBE.Infrastructure.Data;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using QuestionLairBE.Services.AWS;
 using QuestionLairBE.Services.CourseService;
+using QuestionLairBE.Services.MaterialService;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -55,6 +57,8 @@ builder.Services.AddCors(options =>
 
 // Register Service
 builder.Services.AddScoped<ICourseService, CourseService>();
+builder.Services.AddScoped<IMaterialService, MaterialService>();
+builder.Services.AddScoped<S3Service>();
 
 
 var app = builder.Build();

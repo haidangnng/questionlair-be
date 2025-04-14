@@ -13,6 +13,7 @@ public class AppDbContext : DbContext
     public DbSet<AdminProfile> AdminProfiles => Set<AdminProfile>();
 
     public DbSet<Course> Courses { get; set; } = default!;
+    public DbSet<Material> Materials { get; set; } = default!;
     public DbSet<StudentCourse> StudentCourses { get; set; } = default!;
     public DbSet<TeacherCourse> TeacherCourses { get; set; } = default!;
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
