@@ -102,7 +102,7 @@ public class AuthController : ControllerBase
             Path = "/"
         });
 
-        return Ok(new { success = true });
+        return Ok(new { success = true, token });
     }
 
     [HttpPost("refresh")]
